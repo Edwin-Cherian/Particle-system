@@ -22,22 +22,22 @@ clock = pygame.time.Clock()
 fps = 60
 
 class Particle:
-    def __init__(self, x=0, y=0, vel=0, angle=0, acc=0, size=10):
+    def __init__(self, x=0, y=0, xvel=0, yvel=0, acc=0, size=10):
         self.x = random.randint(50,700)
         self.y = random.randint(50,700)
-        self.vel = random.randint(10,12)
-        self.angle = random.random()*2*math.pi
+        self.xvel = random.randint(-10,10)
+        self.yvel = random.randint(-10,10)
         self.acc = acc
         self.size = size
 
     def move(self):
-        self.x += self.vel * math.cos(self.angle)
-        self.y += self.vel * math.sin(self.angle)
-        if self.x<0 or self.x>WIDTH:
-            self.angle = self.angle*-1 + math.pi
+        self.x += self.xvel
+        self.y += self.yvel
+        if self.x-self.size < 0 or self.x+self.size > WIDTH:
+            self.xvel *= -1
 
-        if self.y<0 or self.y>HEIGHT:
-            self.angle *= -1
+        if self.y-self.size<0 or self.y+self.size>HEIGHT:
+            self.yvel *= -1
 
 
 
