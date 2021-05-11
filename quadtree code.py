@@ -22,18 +22,20 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 fps = 100
 
-class Rectangle:
-    def __init__(self,x=200,y=200,w=200,h=200):
+
+
+class Circle:
+    def __init__(self,x=200,y=200,r=10):
         self.x = x
         self.y = y
-        self.w = w
-        self.h = h
+        self.r = r
 
     def draw(self):
-        pygame.draw.rect(screen, BLUE, [self.x, self.y, self.w, self.h], width=1)
+        pygame.draw.circle(screen, BLUE, (self.x, self.y), self.r, width=1)
+
 
 class Qt:
-    def __init__(self, x, y, w, h, capacity=2, divided=False):
+    def __init__(self, x, y, w, h, capacity=1, divided=False):
         self.x = x
         self.y = y
         self.w = w
@@ -62,10 +64,6 @@ class Qt:
                     self.se.addpoint(point)
 
     def draw(self):
-        if len(self.points) < self.capacity:
-            pygame.draw.rect(screen, WHITE, [self.x, self.y, self.w, self.h], width=1)
-        else:
-            pygame.draw.rect(screen, RED, [self.x, self.y, self.w, self.h], width=1)
         try:
             self.nw.draw()
             self.ne.draw()
@@ -73,25 +71,29 @@ class Qt:
             self.se.draw()
         except:
             pass
+        if len(self.points) < self.capacity:
+            pygame.draw.rect(screen, WHITE, [self.x, self.y, self.w, self.h], width=1)
+        else:
+            pygame.draw.rect(screen, RED, [self.x, self.y, self.w, self.h], width=1)
 
     def highlight(self):
         pygame.draw.rect(screen, CYAN, [self.x, self.y, self.w, self.h], width=1)
 
     def intersect(self, area):
-        return not(self.x>area.x+area.w or self.x+self.w<area.x or
-                   self.y>area.y+area.w or self.y+self.w<area.y)
+        return not(self.x>area.x+area.r or self.x+self.w<area.x-area.r or
+                   self.y>area.y+area.r or self.y+self.w<area.y-area.r)
 
     def query(self, area):
         result = []
         if self.intersect(area):
-            if area.x<=self.x and self.x+self.w<=area.x+area.w and area.y<=self.y and self.y+self.h<=area.y+area.h:##qt fits fully inside query
+            if area.x-area.r<=self.x and self.x+self.w<=area.x+area.r and area.y-area.r<=self.y and self.y+self.h<=area.y+area.r:##qt fits fully inside query
                 if not self.divided:
                     result.extend(self.points)
 
 
                 else:
                     result.extend(self.points + self.nw.query(area) + self.ne.query(area) + self.sw.query(area) + self.se.query(area))
-                    self.highlight()
+                    #self.highlight()
 
             else:
                 if not self.divided:
@@ -113,26 +115,50 @@ class Qt:
         self.sw = Qt(self.x, self.y+self.h/2, self.w/2, self.h/2)
         self.se = Qt(self.x+self.w/2, self.y+self.h/2, self.w/2, self.h/2)
 
+
 class Particle:
-    def __init__(self, x, y):
+    def __init__(self, x, y, r):
         self.x = x
         self.y = y
+        self.r = r
+        self.vx = random.randint(-1,1)
+        self.vy = random.randint(-1,1)
+
+    def checkcollision(self):
+        qresults = qt.query(Circle(self.x, self.y, self.r))
+        try:
+            if len(qresults)>1:
+                for qresult in qresults:
+                    qresult.highlight()
+
+        except:
+            pass
 
     def contained(self, area):
-        if area.x <= self.x <= area.x+area.w and area.y <= self.y <= area.y+area.h:
+        #if area.x-area.r <= self.x <= area.x+area.r and area.y-area.r <= self.y <= area.y+area.r:
+        if (self.x-area.x)**2 + (self.y-area.y)**2 <= (self.r*2)**2:
             return True
         return False
 
     def drawparticle(self):
-        pygame.draw.circle(screen, GREEN, (self.x, self.y), 10)
+        pygame.draw.circle(screen, GREEN, (self.x, self.y), self.r)
 
     def highlight(self):
-        pygame.draw.circle(screen, CYAN, (self.x, self.y), 10)
+        pygame.draw.circle(screen, RED, (self.x, self.y), self.r)
 
-particles=[Particle(random.randint(1,WIDTH),random.randint(1,HEIGHT)) for i in range(0)]
+    def move(self):
+        self.x += self.vx
+        self.y += self.vy
+        if self.x-self.r < 0 or self.x+self.r > WIDTH:
+            self.vx *= -1
+
+
+        if self.y-self.r<0 or self.y+self.r>HEIGHT:
+            self.vy *= -1
+
+particles=[Particle(random.randint(1,WIDTH),random.randint(1,HEIGHT), 5) for i in range(1000)]
 qt=Qt(0,0,WIDTH,HEIGHT)
 
-search = Rectangle(200,200,200,200)
 
 print(qt.__dict__)
 for particle in particles:
@@ -158,26 +184,36 @@ while run:
                 qt = Qt(0,0,WIDTH,HEIGHT)
                 particles = []
 
-    search = Rectangle(pygame.mouse.get_pos()[0]-100,pygame.mouse.get_pos()[1]-100,200,200)
+    search = Circle(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1],10)
 
-    s=time.perf_counter()
+
     pressed = pygame.mouse.get_pressed()
     if pressed[0]:
         x,y = pygame.mouse.get_pos()
-        particles.append(Particle(x,y))
-        qt.addpoint(Particle(x,y))
+        particles.append(Particle(x,y,10))
+        qt.addpoint(Particle(x,y,10))
 
-    qt.draw()
+    #qt.draw()
+
+    s=time.perf_counter()
+    qt=Qt(0,0,WIDTH,HEIGHT)
     for particle in particles:
+        particle.move()
+        qt.addpoint(particle)
         particle.drawparticle()
-    search.draw()
+        #particle.checkcollision()
 
-    qresults = qt.query(search)
-    try:
-        for qresult in qresults:
-            qresult.highlight()
-    except:
-        pass
-    print(len(qresults))
+    search.draw()
     print(1/(time.perf_counter()-s))
+
+    #s=time.perf_counter()
+    qresults = qt.query(search)
+    #print(1/(time.perf_counter()-s))
+    #try:
+        #for qresult in qresults:
+            #qresult.highlight()
+    #except:
+        #pass
+    #print(len(qresults))
+    #print(1/(time.perf_counter()-s))
     pygame.display.update()
