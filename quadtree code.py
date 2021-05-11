@@ -184,7 +184,6 @@ while run:
                 qt = Qt(0,0,WIDTH,HEIGHT)
                 particles = []
 
-    search = Circle(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1],10)
 
 
     pressed = pygame.mouse.get_pressed()
@@ -201,19 +200,7 @@ while run:
         particle.move()
         qt.addpoint(particle)
         particle.drawparticle()
-        #particle.checkcollision()
+        particle.checkcollision()
 
-    search.draw()
     print(1/(time.perf_counter()-s))
-
-    #s=time.perf_counter()
-    qresults = qt.query(search)
-    #print(1/(time.perf_counter()-s))
-    #try:
-        #for qresult in qresults:
-            #qresult.highlight()
-    #except:
-        #pass
-    #print(len(qresults))
-    #print(1/(time.perf_counter()-s))
     pygame.display.update()
