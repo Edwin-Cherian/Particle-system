@@ -47,21 +47,15 @@ class Qt:
     def addpoint(self, point):
         if self.x < point.x <= self.x+self.w and self.y < point.y <= self.y+self.h:
             if len(self.points) < self.capacity:
-                #print("Adding points to current tree: {}".format(point.__dict__.values()))
                 self.points.append(point)
-                #print(self.x, self.y, self.points)
             else:
-                if self.divided == True:
-                    self.nw.addpoint(point)
-                    self.ne.addpoint(point)
-                    self.sw.addpoint(point)
-                    self.se.addpoint(point)
-                else:
+                if not self.divided:
                     self.subdivide()
-                    self.nw.addpoint(point)
-                    self.ne.addpoint(point)
-                    self.sw.addpoint(point)
-                    self.se.addpoint(point)
+
+                self.nw.addpoint(point)
+                self.ne.addpoint(point)
+                self.sw.addpoint(point)
+                self.se.addpoint(point)
 
     def draw(self):
         try:
@@ -86,16 +80,6 @@ class Qt:
     def query(self, area):
         result = []
         if self.intersect(area):
-            #if area.x-area.r<=self.x and self.x+self.w<=area.x+area.r and area.y-area.r<=self.y and self.y+self.h<=area.y+area.r:##qt fits fully inside query
-                #if not self.divided:
-                    #result.extend(self.points)
-
-
-                #else:
-                    #result.extend(self.points + self.nw.query(area) + self.ne.query(area) + self.sw.query(area) + self.se.query(area))
-                    #self.highlight()
-
-            #else:
             if not self.divided:
                 for point in self.points:
                     if point.contained(area):
@@ -104,7 +88,7 @@ class Qt:
                 for point in self.points:
                     if point.contained(area):
                         result.append(point)
-                result.extend(self.nw.query(area) + self.ne.query(area) + self.sw.query(area) + self.se.query(area))
+                result.extend(self.nw.query(area) + self.ne.query(area) + self.se.query(area) + self.sw.query(area))
         return result
 
     def subdivide(self):
@@ -163,6 +147,8 @@ qt=Qt(0,0,WIDTH,HEIGHT)
 print(qt.__dict__)
 for particle in particles:
     qt.addpoint(particle)
+
+
 
 #<----RUN PROGRAM IN PYGAME---->
 run = True
