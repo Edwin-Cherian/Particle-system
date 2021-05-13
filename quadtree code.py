@@ -86,25 +86,25 @@ class Qt:
     def query(self, area):
         result = []
         if self.intersect(area):
-            if area.x-area.r<=self.x and self.x+self.w<=area.x+area.r and area.y-area.r<=self.y and self.y+self.h<=area.y+area.r:##qt fits fully inside query
-                if not self.divided:
-                    result.extend(self.points)
+            #if area.x-area.r<=self.x and self.x+self.w<=area.x+area.r and area.y-area.r<=self.y and self.y+self.h<=area.y+area.r:##qt fits fully inside query
+                #if not self.divided:
+                    #result.extend(self.points)
 
 
-                else:
-                    result.extend(self.points + self.nw.query(area) + self.ne.query(area) + self.sw.query(area) + self.se.query(area))
+                #else:
+                    #result.extend(self.points + self.nw.query(area) + self.ne.query(area) + self.sw.query(area) + self.se.query(area))
                     #self.highlight()
 
+            #else:
+            if not self.divided:
+                for point in self.points:
+                    if point.contained(area):
+                        result.append(point)
             else:
-                if not self.divided:
-                    for point in self.points:
-                        if point.contained(area):
-                            result.append(point)
-                else:
-                    for point in self.points:
-                        if point.contained(area):
-                            result.append(point)
-                    result.extend(self.nw.query(area) + self.ne.query(area) + self.sw.query(area) + self.se.query(area))
+                for point in self.points:
+                    if point.contained(area):
+                        result.append(point)
+                result.extend(self.nw.query(area) + self.ne.query(area) + self.sw.query(area) + self.se.query(area))
         return result
 
     def subdivide(self):
@@ -121,8 +121,8 @@ class Particle:
         self.x = x
         self.y = y
         self.r = r
-        self.vx = random.randint(-1,1)
-        self.vy = random.randint(-1,1)
+        self.vx = random.randint(-3,3)
+        self.vy = random.randint(-3,3)
 
     def checkcollision(self):
         qresults = qt.query(Circle(self.x, self.y, self.r))
@@ -156,7 +156,7 @@ class Particle:
         if self.y-self.r<0 or self.y+self.r>HEIGHT:
             self.vy *= -1
 
-particles=[Particle(random.randint(1,WIDTH),random.randint(1,HEIGHT), 5) for i in range(1000)]
+particles=[Particle(random.randint(1,WIDTH),random.randint(1,HEIGHT), 3) for i in range(1000)]
 qt=Qt(0,0,WIDTH,HEIGHT)
 
 
@@ -200,6 +200,7 @@ while run:
         particle.move()
         qt.addpoint(particle)
         particle.drawparticle()
+
         particle.checkcollision()
 
     print(1/(time.perf_counter()-s))
