@@ -1,33 +1,22 @@
 # todo update to use multiple physics loops per draw loop
-# todo add resizable
-"""
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZEABLE)
-...
-if event.type == pygame.VIDEO_RESIZE:
-    screen = pygame.display.set_mode((event.x, event.y), pygame.RESIZEABLE)
-
-reformat functions using WIDTH, HEIGHT to use screen.get_size() or assign values to WIDTH, HEIGHT
-
-if you are drawing before resizing:
-...
-if event.type === pygame.VIDEO_RESIZE:
-    old_screen = screen
-    screen = pygame.display.set_mode((event.x, event.y), pygame.RESIZEABLE)
-    screen.blit(old_screen)
-    del old_screen
-"""
+# todo view collisions
 from physics import Solver, FixedGrid, Particle
-from pygame import Color, Vector2
+from pygame import Color
 import pygame
 import random
 
-# pygame settings
-WIDTH = 400
-HEIGHT = 400
-FPS = 60
+# settings
+SIZE = 400
+PARTICLES = 500
+GRID_DIVISIONS = 75
+MIN_VELOCITY = 20
+MAX_VELOCITY = 100
+MIN_RADIUS = 2
+MAX_RADIUS = 5
+FPS = 1000
 
 # performance tracking stuff
-frame_rates = [0. for _ in range(600)]  # used to get an average framerate from the past x frames
+frame_rates = [60. for _ in range(600)]  # used to get an average framerate from the past x frames
 
 # colours
 WHITE = Color(255, 255, 255)
@@ -39,17 +28,17 @@ LIGHT_BLUE = Color(128, 128, 255)
 # setup pygame
 pygame.init()
 pygame.display.set_caption("Particle Collisions")
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((SIZE, SIZE))
 clock = pygame.time.Clock()
 running = True
 
 # setup particles
-grid = FixedGrid(screen.get_rect(), 75)
-solver = Solver(screen.get_rect(), grid)
-for i in range(500):
-    x, y = random.randint(0, WIDTH - 1), random.randint(0, HEIGHT - 1)
-    vx, vy = 100 * random.random(), 100 * random.random()
-    radius = 3 * random.random() + 2
+grid = FixedGrid(SIZE, GRID_DIVISIONS)
+solver = Solver(SIZE, grid)
+for i in range(PARTICLES):
+    x, y = [random.randint(0, SIZE - 1) for _ in range(2)]
+    vx, vy = [MIN_VELOCITY + (MAX_VELOCITY - MIN_VELOCITY) * random.random() for _ in range(2)]
+    radius = MIN_RADIUS + (MAX_RADIUS - MIN_RADIUS) * random.random()
     grid.add_child(Particle(x, y, vx, vy, radius))
 
 # program loop

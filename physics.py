@@ -1,4 +1,4 @@
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Union, Tuple, Iterable
 from dataclasses import dataclass
 from pygame import Vector2, Rect
 from abc import ABC
@@ -14,11 +14,11 @@ class Utility:
 
 @dataclass
 class Particle:
-    """Particle data class to store position, velocity, acceleration, radius, mass."""
+    """Particle data class to store position, velocity, radius, mass."""
+    id: int
     pos: Vector2
     prev_pos: Vector2
     vel: Vector2
-    acc: Vector2
     radius: float
     mass: float
 
@@ -30,7 +30,6 @@ class Particle:
         self.pos = Vector2(x, y)
         self.prev_pos = self.pos
         self.vel = Vector2(vx, vy)
-        self.acc = Vector2(0, 0)
         self.radius = radius
         self.mass = mass
 
@@ -40,9 +39,9 @@ class Particle:
 
 
 class ParticleManager(ABC):
-    """Abstract class for particle storage systems."""
-    rect: Rect
-    children: Dict[Particle, Union[Particle, None]]
+    """Abstract class for square particle storage systems."""
+    size: float
+    children: Iterable
 
     def add_child(self, child: Particle) -> bool:
         """Add an object to the grid."""
@@ -67,16 +66,12 @@ class FixedGrid(ParticleManager):
     divs: int
     cell_size: float
     cells: List[Union[None, Particle]]
+    children: Dict[Particle, Union[Particle, None]]
 
-    def __init__(self, rect: Rect, divs: int) -> None:
-        rect = rect.copy()
-        if rect.width > rect.height:
-            rect.height = rect.width
-        elif rect.height > rect.width:
-            rect.width = rect.height
-        self.rect = rect
+    def __init__(self, size: float, divs: int) -> None:
+        self.size = size
         self.divs = divs
-        self.cell_size = rect.width / divs
+        self.cell_size = size / divs
         self.cells = [None for _ in range(divs ** 2)]  # Each cell stores a reference to the first child
         self.children = {}  # Each child stores a reference to the next child in the cell
 
@@ -131,11 +126,13 @@ class FixedGrid(ParticleManager):
         x, y = self.get_cell_xy(child.prev_pos if use_prev else child.pos)
         if (curr_child := self.cells[self.ci(x, y)]) == child:
             self.cells[self.ci(x, y)] = self.children[child]
+            self.children[child] = None
             return True
         # other wise traverse until you find the pointer to the child, and replace that with the child's pointer
         while self.children[curr_child] != child:
             curr_child = self.children[curr_child]
         self.children[curr_child] = self.children[child]
+        self.children[child] = None
         return True
 
     def remove_child(self, child: Particle) -> bool:
@@ -145,18 +142,18 @@ class FixedGrid(ParticleManager):
 
     def get_near(self, child: Particle) -> List[Particle]:
         # Or convert to Vector2Int
-        # Approach 1: Check all possible cells for all possible particle locations
-        cx, cy = self.get_cell_xy(child.pos)
-        cells_radius = math.ceil(child.radius / self.cell_size)
-        min_cx, min_cy = cx - cells_radius, cy - cells_radius
-        max_cx, max_cy = cx + cells_radius, cy + cells_radius
-        # Approach 2: Check all possible cells for current particle location
-        # min_x, min_y = child.pos.x - child.radius, child.pos.y - child.radius
-        # max_x, max_y = child.pos.x + child.radius, child.pos.y + child.radius
-        # min_cx, min_cy = math.floor(min_x / self.cell_size), math.floor(min_y / self.cell_size)
-        # max_cx, max_cy = math.floor(max_x / self.cell_size), math.floor(max_y / self.cell_size)
+        # Approach 1: Check all possible cells - Less efficient in testing
+        # cx, cy = self.get_cell_xy(child.pos)
+        # cells_radius = math.ceil(child.radius / self.cell_size)
+        # min_cx, min_cy = cx - cells_radius, cy - cells_radius
+        # max_cx, max_cy = cx + cells_radius, cy + cells_radius
+        # Approach 2: Check all possible cells for current particle location - More efficient in testing
+        min_x, min_y = child.pos.x - child.radius, child.pos.y - child.radius
+        max_x, max_y = child.pos.x + child.radius, child.pos.y + child.radius
+        min_cx, min_cy = math.floor(min_x / self.cell_size), math.floor(min_y / self.cell_size)
+        max_cx, max_cy = math.floor(max_x / self.cell_size), math.floor(max_y / self.cell_size)
         # for each cell that could contain a collision, get all the particles and add them to the return list
-        # note the +1 to the maximum, as we want to include this value, which we normally exclude
+        # note the +1 to the maximum, as we want to include this value, which we normally exclude in range()
         children = []
         for y in range(Utility.clamp(min_cy, 0, self.divs), Utility.clamp(max_cy + 1, 0, self.divs)):
             for x in range(Utility.clamp(min_cx, 0, self.divs), Utility.clamp(max_cx + 1, 0, self.divs)):
@@ -176,32 +173,25 @@ class FixedGrid(ParticleManager):
 
 
 # TODO Handle > 2 particles colliding
-# TODO Implement acceleration
 class Solver:
     """Class to handle collisions and movement of particles."""
     rect: Rect
     manager: ParticleManager
 
-    def __init__(self, rect: Rect, manager: ParticleManager = None) -> None:
-        self.rect = rect.copy()
-        if manager is None:
-            manager = FixedGrid(rect, 100)
+    def __init__(self, size: float, manager: ParticleManager) -> None:
+        self.size = size
         self.manager = manager
 
     def update_particle(self, particle: Particle, delta_time: float) -> None:
         """Update the position and velocity of a particle, without handling collisions."""
-        particle.prev_pos = particle.pos
+        particle.prev_pos = Vector2(particle.pos)
         particle.pos += particle.vel * delta_time
-        if particle.pos.x - particle.radius < self.rect.x or \
-                particle.pos.x + particle.radius > self.rect.x + self.rect.width:
+        if particle.pos.x - particle.radius < 0 or particle.pos.x + particle.radius > self.size:
             particle.vel.x *= -1
-            particle.pos.x = Utility.clamp(particle.pos.x, self.rect.x + particle.radius,
-                                           self.rect.x + self.rect.width - particle.radius)
-        if particle.pos.y - particle.radius < self.rect.y or \
-                particle.pos.y + particle.radius > self.rect.y + self.rect.height:
+            particle.pos.x = Utility.clamp(particle.pos.x, particle.radius, self.size - particle.radius)
+        if particle.pos.y - particle.radius < 0 or particle.pos.y + particle.radius > self.size:
             particle.vel.y *= -1
-            particle.pos.y = Utility.clamp(particle.pos.y, self.rect.y + particle.radius,
-                                           self.rect.y + self.rect.height - particle.radius)
+            particle.pos.y = Utility.clamp(particle.pos.y, particle.radius, self.size - particle.radius)
 
     @staticmethod
     def test_collide(a: Particle, b: Particle) -> bool:
@@ -219,6 +209,7 @@ class Solver:
         count = 0
         for particle in self.manager.children:
             self.update_particle(particle, delta_time)
+        self.manager.update()
         for particle in self.manager.children:
             possible_collisions = self.manager.get_near(particle)
             for possible_collision in possible_collisions:

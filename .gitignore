@@ -139,3 +139,8 @@ cython_debug/
 
 # IntelliJ PyCharm files
 .idea/
+
+# Debugging files
+debug/
+oh-god-help-me/
+fix-code.py
