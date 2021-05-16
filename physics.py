@@ -21,10 +21,18 @@ class Particle:
     vel: Vector2
     radius: float
     mass: float
+<<<<<<< Updated upstream
 
     count: int = 0
 
     def __init__(self, x: float, y: float, vx: float, vy: float, radius: float, mass: float = 1) -> None:
+=======
+    collided: bool
+
+    count: int = 0
+
+    def __init__(self, x: float, y: float, vx: float, vy: float, radius: float, mass: float = 1, collided: bool = False) -> None:
+>>>>>>> Stashed changes
         self.id = Particle.count
         Particle.count += 1
         self.pos = Vector2(x, y)
@@ -32,6 +40,10 @@ class Particle:
         self.vel = Vector2(vx, vy)
         self.radius = radius
         self.mass = mass
+<<<<<<< Updated upstream
+=======
+        self.collided = collided
+>>>>>>> Stashed changes
 
     def __hash__(self) -> int:
         """Calculate unique hash code."""
@@ -201,6 +213,11 @@ class Solver:
     @staticmethod
     def collide(a: Particle, b: Particle) -> None:
         """Calculate the new position and velocity of two colliding particles."""
+<<<<<<< Updated upstream
+=======
+        a.collided = True
+        b.collided = True
+>>>>>>> Stashed changes
         pass
 
     def step(self, delta_time: float) -> int:
@@ -216,4 +233,8 @@ class Solver:
                 if possible_collision != particle and self.test_collide(particle, possible_collision):
                     self.collide(particle, possible_collision)
                     count += 1
+<<<<<<< Updated upstream
         return count
+=======
+        return count
+>>>>>>> Stashed changes
