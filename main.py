@@ -6,31 +6,17 @@ import pygame
 import random
 
 # settings
-<<<<<<< Updated upstream
 SIZE = 400
 PARTICLES = 500
 GRID_DIVISIONS = 75
-MIN_VELOCITY = 20
-MAX_VELOCITY = 100
+MIN_VELOCITY = -50
+MAX_VELOCITY = 50
 MIN_RADIUS = 2
 MAX_RADIUS = 5
 FPS = 1000
 
 # performance tracking stuff
 frame_rates = [60. for _ in range(600)]  # used to get an average framerate from the past x frames
-=======
-SIZE = 800
-PARTICLES = 1000
-GRID_DIVISIONS = 75
-MIN_VELOCITY = -50
-MAX_VELOCITY = 50
-MIN_RADIUS = 3
-MAX_RADIUS = 6
-FPS = 1000
-
-# performance tracking stuff
-frame_rates = [60. for _ in range(15)]  # used to get an average framerate from the past x frames
->>>>>>> Stashed changes
 
 # colours
 WHITE = Color(255, 255, 255)
@@ -68,15 +54,12 @@ while running:
     # update particles then draw
     solver.step(delta_t / 1000)
     for particle in grid.children:
-<<<<<<< Updated upstream
-        pygame.draw.circle(screen, BLACK, particle.pos, particle.radius)
-=======
-        if not particle.collided:
-            pygame.draw.circle(screen, BLACK, particle.pos, particle.radius)
-        else:
+        if particle.collided:
             pygame.draw.circle(screen, RED, particle.pos, particle.radius)
             particle.collided = False
->>>>>>> Stashed changes
+        else:
+            pygame.draw.circle(screen, BLACK, particle.pos, particle.radius)
+
 
     # update display
     pygame.display.flip()
@@ -84,8 +67,4 @@ while running:
     frame_rates.pop(0)
     frame_rates.append(clock.get_fps())
     print("\r", flush=True, end="")
-<<<<<<< Updated upstream
     print(f"{sum(frame_rates) / len(frame_rates):.2f}", end="", flush=False)
-=======
-    print(f"{sum(frame_rates) / len(frame_rates):.2f}", end="", flush=False)
->>>>>>> Stashed changes
