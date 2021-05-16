@@ -80,7 +80,6 @@ class Qt:
     def query(self, area):
         result = []
         if self.intersect(area):
-<<<<<<< Updated upstream
             if not self.divided:
                 for point in self.points:
                     if point.contained(area):
@@ -92,17 +91,6 @@ class Qt:
                 result.extend(self.nw.query(area) + self.ne.query(area) + self.se.query(area) + self.sw.query(area))
         return result
 
-=======
-            for point in self.points:
-                if point.collideswith(area):
-                    result.append(point)
-
-            if self.divided:
-                result.extend(self.nw.query(area) + self.ne.query(area) + self.se.query(area) + self.sw.query(area))
-        return result
-
-
->>>>>>> Stashed changes
     def subdivide(self):
         #print("Subtrees created")
         self.divided = True
@@ -121,11 +109,7 @@ class Particle:
         self.vy = random.randint(-3,3)
 
     def checkcollision(self):
-<<<<<<< Updated upstream
         qresults = qt.query(Circle(self.x, self.y, self.r))
-=======
-        qresults = qt.query(self)
->>>>>>> Stashed changes
         try:
             if len(qresults)>1:
                 for qresult in qresults:
@@ -134,12 +118,8 @@ class Particle:
         except:
             pass
 
-<<<<<<< Updated upstream
     def contained(self, area):
         #if area.x-area.r <= self.x <= area.x+area.r and area.y-area.r <= self.y <= area.y+area.r:
-=======
-    def collideswith(self, area):
->>>>>>> Stashed changes
         if (self.x-area.x)**2 + (self.y-area.y)**2 <= (self.r*2)**2:
             return True
         return False
@@ -206,10 +186,7 @@ while run:
         particle.move()
         qt.addpoint(particle)
         particle.drawparticle()
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
         particle.checkcollision()
 
     print(1/(time.perf_counter()-s))
