@@ -1,6 +1,6 @@
 # todo update to use multiple physics loops per draw loop
 # todo view collisions
-from physics import Solver, FixedGrid, Particle
+from physics import ParticleEngine, FixedGrid, Particle
 from pygame import Color
 import pygame
 import random
@@ -8,15 +8,16 @@ import random
 # settings
 SIZE = 400
 PARTICLES = 500
-GRID_DIVISIONS = 75
-MIN_VELOCITY = -50
-MAX_VELOCITY = 50
+CELL_SIZE = 5
+MIN_VELOCITY = -100
+MAX_VELOCITY = 100
 MIN_RADIUS = 2
 MAX_RADIUS = 5
-FPS = 1000
+TIMESCALE = 1
+FPS = 60
 
 # performance tracking stuff
-frame_rates = [60. for _ in range(600)]  # used to get an average framerate from the past x frames
+frame_rates = [0. for _ in range(60)]  # used to get average framerate over x frames
 
 # colours
 WHITE = Color(255, 255, 255)
@@ -33,8 +34,8 @@ clock = pygame.time.Clock()
 running = True
 
 # setup particles
-grid = FixedGrid(SIZE, GRID_DIVISIONS)
-solver = Solver(SIZE, grid)
+grid = FixedGrid.from_cell_size(SIZE, CELL_SIZE)
+engine = ParticleEngine(SIZE, grid)
 for i in range(PARTICLES):
     x, y = [random.randint(0, SIZE - 1) for _ in range(2)]
     vx, vy = [MIN_VELOCITY + (MAX_VELOCITY - MIN_VELOCITY) * random.random() for _ in range(2)]
@@ -52,14 +53,9 @@ while running:
             running = False
 
     # update particles then draw
-    solver.step(delta_t / 1000)
+    engine.step(delta_t / 1000 * TIMESCALE)
     for particle in grid.children:
-        if particle.collided:
-            pygame.draw.circle(screen, RED, particle.pos, particle.radius)
-            particle.collided = False
-        else:
-            pygame.draw.circle(screen, BLACK, particle.pos, particle.radius)
-
+        engine.draw_particle(screen, particle, BLACK, RED)
 
     # update display
     pygame.display.flip()

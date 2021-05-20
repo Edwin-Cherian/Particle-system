@@ -1,6 +1,6 @@
 from typing import Dict, List, Union, Tuple, Iterable
 from dataclasses import dataclass
-from pygame import Vector2, Rect
+from pygame import Vector2, Rect, Surface, Color, draw
 from abc import ABC
 import math
 
@@ -21,11 +21,10 @@ class Particle:
     vel: Vector2
     radius: float
     mass: float
-    collided: bool
 
     count: int = 0
 
-    def __init__(self, x: float, y: float, vx: float, vy: float, radius: float, mass: float = 1, collided: bool = False) -> None:
+    def __init__(self, x: float, y: float, vx: float, vy: float, radius: float, mass: float = 1) -> None:
         self.id = Particle.count
         Particle.count += 1
         self.pos = Vector2(x, y)
@@ -70,12 +69,16 @@ class FixedGrid(ParticleManager):
     cells: List[Union[None, Particle]]
     children: Dict[Particle, Union[Particle, None]]
 
-    def __init__(self, size: float, divs: int) -> None:
+    def __init__(self, size: float, divs: int = 50) -> None:
         self.size = size
         self.divs = divs
         self.cell_size = size / divs
         self.cells = [None for _ in range(divs ** 2)]  # Each cell stores a reference to the first child
         self.children = {}  # Each child stores a reference to the next child in the cell
+
+    @classmethod
+    def from_cell_size(cls, size: float, cell_size: float):
+        return FixedGrid(size, math.floor(size / cell_size))
 
     def is_valid(self, x: float, y: float) -> bool:
         """Return whether coords lie within the grid."""
@@ -130,7 +133,7 @@ class FixedGrid(ParticleManager):
             self.cells[self.ci(x, y)] = self.children[child]
             self.children[child] = None
             return True
-        # other wise traverse until you find the pointer to the child, and replace that with the child's pointer
+        # otherwise traverse until you find the pointer to the child, and replace that with the child's pointer
         while self.children[curr_child] != child:
             curr_child = self.children[curr_child]
         self.children[curr_child] = self.children[child]
@@ -175,7 +178,7 @@ class FixedGrid(ParticleManager):
 
 
 # TODO Handle > 2 particles colliding
-class Solver:
+class ParticleEngine:
     """Class to handle collisions and movement of particles."""
     rect: Rect
     manager: ParticleManager
@@ -205,6 +208,12 @@ class Solver:
         """Calculate the new position and velocity of two colliding particles."""
         a.collided = True
         b.collided = True
+
+    @staticmethod
+    def draw_particle(screen: Surface, particle: Particle, default_col: Color, collide_col: Color) -> None:
+        draw.circle(screen, collide_col if particle.collided else default_col, particle.pos, particle.radius)
+        if particle.collided:
+            particle.collided = False
 
     def step(self, delta_time: float) -> int:
         """Step through the simulation and return the number of collisions."""
