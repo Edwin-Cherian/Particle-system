@@ -1,0 +1,29 @@
+WHAT IS OUR ARRAY
+1d array of length 16
+
+
+HOW IT WORKS
+each element of the array need to point to its 1st particle, or -1 if it has none
+
+each particle needs to point to the next particle, or -1 if it is the last particle
+
+when testing a particle collision, we get its cell and test collisiosn for cells within. We might also need to test collisions from neighbouring cells. Might need to create function that returns cells surounding a particle, what if it is massive?
+
+when a particle moves we need to see if it has left a cell. If so remove it from the current cell(make sure the particles are still linked). Then add it to the cell it has moved to (last particle points to this cell now). Consider if the cell has no particles.
+
+
+
+HOW TO ACTUALLY LINK CELLS AND PARTICLES
+grid is an array 
+array contains X cells
+each cell contains Y particles
+Hence we have a 2d array: grid[cell[particle,particle....], cell[particle]]
+cells will
+
+
+
+
+PROBLEMS BEN MIGHT HAVE MISSED
+when moving a particle are you removing from a cell and correctly adding to another?
+does self.id change? probs not
+x y mix up?
