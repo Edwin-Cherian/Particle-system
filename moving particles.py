@@ -25,15 +25,16 @@ fps = 60
 MINVELOCITY = -5
 MAXVELOCITY = 5
 PARTICLES = 100
+PARTICLE_SIZE = 30
 
 
 class Particle:
-    def __init__(self, x, y, xvel, yvel, size=3):
+    def __init__(self, x = 0, y = 0, xvel = 0, yvel = 0, size = 0):
         self.x = random.randint(0, WIDTH)
         self.y = random.randint(0, HEIGHT)
         self.xvel = random.randint(MINVELOCITY, MAXVELOCITY)
         self.yvel = random.randint(MINVELOCITY, MAXVELOCITY)
-        self.size = size
+        self.size = PARTICLE_SIZE
 
 
     def checkcollision(self, particles):
@@ -56,11 +57,13 @@ class Particle:
     def move(self, particles):
         self.x += self.xvel
         self.y += self.yvel
-        if self.x-self.size < 0 or self.x+self.size > WIDTH:
+        if self.x-self.size <= 0 or self.x+self.size >= WIDTH:
             self.xvel *= -1
+            self.x = max(self.size,min(self.x, WIDTH-self.size))
 
-        if self.y-self.size<0 or self.y+self.size>HEIGHT:
+        if self.y-self.size <= 0 or self.y+self.size >= HEIGHT:
             self.yvel *= -1
+            self.y = max(self.size,min(self.y, HEIGHT-self.size))
 
         self.draw()
         self.checkcollision(particles)
