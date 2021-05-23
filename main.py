@@ -1,20 +1,20 @@
 # todo update to use multiple physics loops per draw loop
-# todo view collisions
-from physics import ParticleEngine, FixedGrid, Particle
+from physics import ParticleEngine, FixedGrid, Particle, QuadTree
 from pygame import Color
 import pygame
 import random
 
 # settings
+MANAGER_TYPE = FixedGrid
 SIZE = 400
 PARTICLES = 500
 CELL_SIZE = 5
-MIN_VELOCITY = -100
-MAX_VELOCITY = 100
-MIN_RADIUS = 2
-MAX_RADIUS = 5
+MIN_VELOCITY = -50
+MAX_VELOCITY = 50
+MIN_RADIUS = 1
+MAX_RADIUS = 3
 TIMESCALE = 1
-FPS = 60
+MAX_FPS = 60
 
 # performance tracking stuff
 frame_rates = [0. for _ in range(60)]  # used to get average framerate over x frames
@@ -34,17 +34,23 @@ clock = pygame.time.Clock()
 running = True
 
 # setup particles
-grid = FixedGrid.from_cell_size(SIZE, CELL_SIZE)
-engine = ParticleEngine(SIZE, grid)
+if MANAGER_TYPE is FixedGrid:
+    manager = FixedGrid.from_cell_size(SIZE, CELL_SIZE)
+elif MANAGER_TYPE is QuadTree:
+    manager = QuadTree()
+else:
+    raise Exception(f"Manager type '{MANAGER_TYPE}' is not valid.")
+
+engine = ParticleEngine(SIZE, manager)
 for i in range(PARTICLES):
     x, y = [random.randint(0, SIZE - 1) for _ in range(2)]
     vx, vy = [MIN_VELOCITY + (MAX_VELOCITY - MIN_VELOCITY) * random.random() for _ in range(2)]
     radius = MIN_RADIUS + (MAX_RADIUS - MIN_RADIUS) * random.random()
-    grid.add_child(Particle(x, y, vx, vy, radius))
+    manager.add_child(Particle(x, y, vx, vy, radius))
 
 # program loop
 while running:
-    delta_t = clock.tick(FPS)
+    delta_t = clock.tick(MAX_FPS)
     screen.fill(WHITE)
 
     # process events
@@ -54,7 +60,7 @@ while running:
 
     # update particles then draw
     engine.step(delta_t / 1000 * TIMESCALE)
-    for particle in grid.children:
+    for particle in manager.children:
         engine.draw_particle(screen, particle, BLACK, RED)
 
     # update display

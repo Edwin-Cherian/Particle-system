@@ -1,6 +1,7 @@
-from typing import Dict, List, Union, Tuple, Iterable
-from dataclasses import dataclass
+from __future__ import annotations
 from pygame import Vector2, Rect, Surface, Color, draw
+from typing import Dict, List, Union, Tuple
+from dataclasses import dataclass
 from abc import ABC
 import math
 
@@ -41,15 +42,16 @@ class Particle:
 
 class ParticleManager(ABC):
     """Abstract class for square particle storage systems."""
-    size: float
-    children: Iterable
-
     def add_child(self, child: Particle) -> bool:
         """Add an object to the grid."""
         pass
 
     def remove_child(self, child: Particle) -> bool:
         """Remove an object from the grid."""
+        pass
+
+    def get_children(self) -> List[Particle]:
+        """Return a list of all the particles in the manager."""
         pass
 
     def get_near(self, child: Particle) -> List[Particle]:
@@ -60,10 +62,19 @@ class ParticleManager(ABC):
         """Return the number of particles moved between cells after updating."""
         pass
 
+    def is_in_bounds_x(self, particle: Particle) -> bool:
+        """Return whether the particle's x is within the bounds."""
+        pass
+
+    def is_in_bounds_y(self, particle: Particle) -> bool:
+        """Return whether the particle's y is within the bounds."""
+        pass
+
 
 # Ideal grid size is probably just bigger than the smallest particle diameter
 class FixedGrid(ParticleManager):
     """A square fixed grid to store particles."""
+    size: float
     divs: int
     cell_size: float
     cells: List[Union[None, Particle]]
@@ -92,7 +103,10 @@ class FixedGrid(ParticleManager):
         """Return the cell index of the cell at x, y."""
         return y * self.divs + x
 
-    def get_children(self, x: int, y: int) -> List[Particle]:
+    def get_children(self) -> List[Particle]:
+        return list(self.children.keys())
+
+    def get_cell_children(self, x: int, y: int) -> List[Particle]:
         """Return a list of children contained within the cell."""
         children = []
         # Check if the cell has any children
@@ -146,7 +160,6 @@ class FixedGrid(ParticleManager):
         return result
 
     def get_near(self, child: Particle) -> List[Particle]:
-        # Or convert to Vector2Int
         # Approach 1: Check all possible cells - Less efficient in testing
         # cx, cy = self.get_cell_xy(child.pos)
         # cells_radius = math.ceil(child.radius / self.cell_size)
@@ -162,7 +175,7 @@ class FixedGrid(ParticleManager):
         children = []
         for y in range(Utility.clamp(min_cy, 0, self.divs), Utility.clamp(max_cy + 1, 0, self.divs)):
             for x in range(Utility.clamp(min_cx, 0, self.divs), Utility.clamp(max_cx + 1, 0, self.divs)):
-                children += self.get_children(x, y)
+                children += self.get_cell_children(x, y)
         return children
 
     def update(self) -> int:
@@ -170,11 +183,78 @@ class FixedGrid(ParticleManager):
         # for each cell, if the child is not in the right cell, move it to the right cell
         for child in self.children:
             x, y = self.get_cell_xy(child.pos)
-            if child not in self.get_children(x, y):
+            if child not in self.get_cell_children(x, y):
                 self.remove_child_from_cell(child, True)
                 self.add_child_to_cell(child)
                 count += 1
         return count
+
+    def is_in_bounds_x(self, particle: Particle) -> bool:
+        return particle.pos.x - particle.radius >= 0 and particle.pos.x + particle.radius <= self.size
+
+    def is_in_bounds_y(self, particle: Particle) -> bool:
+        return particle.pos.y - particle.radius >= 0 and particle.pos.y + particle.radius <= self.size
+
+
+class QuadTree(ParticleManager):
+    """Inefficient quad tree based on Edwin's code."""
+    rect: Rect
+    children: List[Particle]
+    capacity: int
+    divided: bool
+    nw: Union[None, QuadTree]
+    ne: Union[None, QuadTree]
+    sw: Union[None, QuadTree]
+    se: Union[None, QuadTree]
+
+    def __init__(self, rect: Rect, capacity: int = 1) -> None:
+        self.rect = rect
+        self.children = []
+        self.capacity = capacity
+        self.divided = False
+        self.nw = self.ne = self.sw = self.se = None
+
+    def subdivide(self) -> None:
+        self.divided = True
+        half_w = self.rect.width / 2
+        half_h = self.rect.height / 2
+        self.nw = QuadTree(Rect(self.rect.x, self.rect.y, half_w, half_h), self.capacity)
+        self.ne = QuadTree(Rect(self.rect.x + half_w, self.rect.y, half_w, half_h), self.capacity)
+        self.sw = QuadTree(Rect(self.rect.x, self.rect.y + half_h, half_w, half_h), self.capacity)
+        self.se = QuadTree(Rect(self.rect.x + half_w, self.rect.y + half_h, half_w, half_h), self.capacity)
+
+    def add_child(self, child: Particle) -> bool:
+        if self.is_in_bounds_x(child) and self.is_in_bounds_y(child):
+            if len(self.children) > self.capacity:
+                self.children.append(child)
+            else:
+                if not self.divided:
+                    self.subdivide()
+                self.nw.add_child(child)
+                self.ne.add_child(child)
+                self.sw.add_child(child)
+                self.se.add_child(child)
+            return True
+        return False
+
+    def remove_child(self, child: Particle) -> bool:
+        pass
+
+    def get_children(self) -> List[Particle]:
+        pass
+
+    def get_near(self, child: Particle) -> List[Particle]:
+        pass
+
+    def update(self) -> int:
+        # reconstruct tree :(
+        pass
+
+    def is_in_bounds_x(self, particle: Particle) -> bool:
+        return self.rect.x < particle.pos.x <= self.rect.x + self.rect.width
+
+    def is_in_bounds_y(self, particle: Particle) -> bool:
+        return self.rect.y < particle.pos.y <= self.rect.y + self.rect.height
 
 
 # TODO Handle > 2 particles colliding
@@ -191,10 +271,10 @@ class ParticleEngine:
         """Update the position and velocity of a particle, without handling collisions."""
         particle.prev_pos = Vector2(particle.pos)
         particle.pos += particle.vel * delta_time
-        if particle.pos.x - particle.radius < 0 or particle.pos.x + particle.radius > self.size:
+        if not self.manager.is_in_bounds_x(particle):
             particle.vel.x *= -1
             particle.pos.x = Utility.clamp(particle.pos.x, particle.radius, self.size - particle.radius)
-        if particle.pos.y - particle.radius < 0 or particle.pos.y + particle.radius > self.size:
+        if not self.manager.is_in_bounds_y(particle):
             particle.vel.y *= -1
             particle.pos.y = Utility.clamp(particle.pos.y, particle.radius, self.size - particle.radius)
 
@@ -211,6 +291,7 @@ class ParticleEngine:
 
     @staticmethod
     def draw_particle(screen: Surface, particle: Particle, default_col: Color, collide_col: Color) -> None:
+        """Draw the particle to the screen, accounting for whether it is colliding or not."""
         draw.circle(screen, collide_col if particle.collided else default_col, particle.pos, particle.radius)
         if particle.collided:
             particle.collided = False
@@ -219,10 +300,10 @@ class ParticleEngine:
         """Step through the simulation and return the number of collisions."""
         # TODO don't check other object when collided
         count = 0
-        for particle in self.manager.children:
+        for particle in self.manager.get_children():
             self.update_particle(particle, delta_time)
         self.manager.update()
-        for particle in self.manager.children:
+        for particle in self.manager.get_children():
             possible_collisions = self.manager.get_near(particle)
             for possible_collision in possible_collisions:
                 if possible_collision != particle and self.test_collide(particle, possible_collision):
