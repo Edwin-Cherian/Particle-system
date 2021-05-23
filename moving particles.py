@@ -72,7 +72,7 @@ class Particle:
 
 
 
-particles = [Particle() for i in range(100)]
+particles = [Particle() for i in range(PARTICLES)]
 
 #<----RUN PROGRAM IN PYGAME---->
 run = True
@@ -83,9 +83,6 @@ while run:
         if event.type == pygame.QUIT:
             run = False
 
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_r:
-                pass
     s=time.perf_counter()
     for particle in particles:
         particle.move(particles)
