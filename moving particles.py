@@ -1,6 +1,5 @@
 import pygame
 import random
-import math
 import time
 
 
@@ -16,23 +15,30 @@ RED = (255,0,0)
 
 #<----SETUP PYGAME WINDOW---->
 pygame.init()
-pygame.display.set_caption("Moving particles")
+pygame.display.set_caption("Pairwise collision detection")
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
-fps = 600
+fps = 60
+
+
+#<----SIMULATION VARIABLES---->
+MINVELOCITY = -5
+MAXVELOCITY = 5
+PARTICLES = 100
+
 
 class Particle:
-    def __init__(self, x=0, y=0, xvel=0, yvel=0, acc=0, size=3):
-        self.x = random.randint(50,700)
-        self.y = random.randint(50,700)
-        self.xvel = random.randint(-1,1)
-        self.yvel = random.randint(-1,1)
-        self.acc = acc
+    def __init__(self, x, y, xvel, yvel, size=3):
+        self.x = random.randint(0, WIDTH)
+        self.y = random.randint(0, HEIGHT)
+        self.xvel = random.randint(MINVELOCITY, MAXVELOCITY)
+        self.yvel = random.randint(MINVELOCITY, MAXVELOCITY)
         self.size = size
 
 
     def checkcollision(self, particles):
         for particle in particles:
+            # checking if 2 particles are overlapping
             if not (self.x+self.size<particle.x-particle.size or self.x-self.size>particle.x+particle.size or
                 self.y+self.size<particle.y-particle.size or self.y-self.size>particle.y+particle.size):
                 if particle != self:
@@ -53,7 +59,6 @@ class Particle:
         if self.x-self.size < 0 or self.x+self.size > WIDTH:
             self.xvel *= -1
 
-
         if self.y-self.size<0 or self.y+self.size>HEIGHT:
             self.yvel *= -1
 
@@ -65,7 +70,6 @@ class Particle:
 
 
 particles = [Particle() for i in range(100)]
-print(particles[0].__dict__)
 
 #<----RUN PROGRAM IN PYGAME---->
 run = True
@@ -82,5 +86,5 @@ while run:
     s=time.perf_counter()
     for particle in particles:
         particle.move(particles)
-    print(1/(time.perf_counter()-s))
+    #print(1/(time.perf_counter()-s)) # outputs fps for running the collision detection
     pygame.display.update()
