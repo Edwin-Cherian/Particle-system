@@ -6,15 +6,15 @@ import pygame
 import random
 
 # settings
-SIZE = 400
-PARTICLES = 500
+SIZE = 800
+PARTICLES = 1000
 CELL_SIZE = 5
 MIN_VELOCITY = -100
 MAX_VELOCITY = 100
 MIN_RADIUS = 2
-MAX_RADIUS = 5
+MAX_RADIUS = 2
 TIMESCALE = 1
-FPS = 60
+FPS = 600000
 
 # performance tracking stuff
 frame_rates = [0. for _ in range(60)]  # used to get average framerate over x frames
