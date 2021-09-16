@@ -1,8 +1,7 @@
 import pygame
 import time
 import random
-import sys
-import os
+
 
 #----WINDOW SETTINGS---->
 WIDTH = 800
